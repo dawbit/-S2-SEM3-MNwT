@@ -1,0 +1,256 @@
+8.
+npc[n_, t_] := Module[{
+    a = 1,
+    b = 2,
+    c = 1,
+    p = 1,
+    \[Lambda] = 1,
+    dt, tk, r, h, T, X, Y,
+    result, resultInT
+    },
+   h = (b - a)/n;
+   dt = (h^2*c*p)/(2*\[Lambda]);
+   (* (h^2*c*p)/(2*\[Lambda]);*)
+   tk = t/dt + 1;
+   r = (\[Lambda]*dt)/(c*p*h^2);
+   X = Table[a + h*i, {i, 0, n}];
+   Y = Table[i*dt, {i, 0, tk}];
+   T = Table[1, {i, tk}, {j, n + 1}];
+   Do[T[[1]][[i]] = X[[i]]^3/6, {i, n + 1}];
+   Do[T[[i]][[1]] = Y[[i]] + 1/6, {i, 2, tk}];
+   Do[T[[i]][[n + 1]] = 2*Y[[i]] + 4/3, {i, 2, tk}];
+   Do[
+    Do[
+      T[[i]][[j]] = 
+        T[[i - 1]][[j]] + 
+         r*(T[[i - 1]][[j + 1]] - 2*T[[i - 1]][[j]] + 
+            T[[i - 1]][[j - 1]]);
+      , {j, 2, n}];
+    , {i, 2, tk}];
+   result = {
+     Table[{X[[i]], Y[[j]], T[[j]][[i]]}, {i, 1, n + 1}, {j, 1, 
+       tk}],  Table[{X[[i]], T[[tk]][[i]]}, {i, 1, n + 1}]
+     };
+   Return[result];
+   ];
+
+
+results = npc[10, 1];
+result = results[[1]];
+resultInT = results[[2]];
+Do[
+  AppendTo[resultInT, ]
+  , {i, 1, Length[result]}];
+resultFlat = Flatten[result, 1];
+plt = Plot3D[x^3/6 + x*t, {x, 1, 2}, {t, 0, 1}, PlotStyle -> Blue];
+plt2 = Plot[x^3/6 + x, {x, 1, 2}, PlotStyle -> Blue];
+resPlt = ListPlot3D[resultFlat, PlotStyle -> Red];
+resPlt2 = ListPlot[resultInT, PlotStyle -> Red];
+Show[resPlt, plt]
+Show[resPlt2, plt2, PlotLabel -> "Chwila koncowa t = 1 "]
+
+
+---
+
+r = Table[{x, t, x^3/6 + x*t}, {x, 1, 2, 1/10}, {t, 0, 1, 1/200}];
+rInT = Table[{x, x^3/6 + x}, {x, 1, 2, 1/10}];
+
+rFlat = Flatten[r, 1];
+
+errors = Table[
+   {resultFlat[[i, 1]],
+      resultFlat[[i, 2]],
+    Abs[rFlat[[i, 3]] - resultFlat[[i, 3]]]},
+   {i, 1, Min[Length[rFlat], Length[resultFlat]]}];
+ListPlot3D[errors, PlotStyle -> Red]
+
+errorsInT = 
+  Table[{resultInT[[i, 1]], 
+    Abs[resultInT[[i, 2]] - rInT[[i, 2]]]}, {i, 1, 
+    Min[Length[rInT], Length[resultInT]]}];
+ListPlot[errorsInT, PlotStyle -> Red, PlotRange -> All, 
+ PlotLabel -> "Blad w chwili koncowej t = 1 "]
+
+
+
+
+
+
+9.
+
+(* Metoda Odchyłek Ważonych *)
+mow1[a_, b_] := Module[{
+    f1 = (x - 2) (x - 3),
+    f2 = x (x - 2) (x - 3),
+    result, T, r, e, res
+    },
+   
+   T = Table[0, {i, 1, 3}];
+   e = Table[0, {i, 1, 2}];
+   
+   T[[1]] = p1*f1 + p2*f2;
+   T[[2]] = D[T[[1]], x];
+   T[[3]] = D[T[[2]], x];
+   
+   r = T[[3]] - 3*T[[2]] - 4 x;
+   e[[1]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f1*
+       r \[DifferentialD]x\)\) == 0;
+   e[[2]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f2*
+       r \[DifferentialD]x\)\) == 0;
+   result = Solve[e];
+   res = T[[1]] /. {p1 -> result[[1, 1, 2]], p2 -> result[[1, 2, 2]]};
+   Return[Simplify[res]];
+   ];
+mow2[a_, b_] := Module[{
+   f1 = (x - 2) (x - 3),
+   f2 = x (x - 2) (x - 3),
+   f3 = x^2 (x - 2) (x - 3),
+   result, T, r, e, res
+   },
+  
+  T = Table[0, {i, 1, 3}];
+  e = Table[0, {i, 1, 3}];
+  
+  T[[1]] = p1*f1 + p2*f2 + p3*f3;
+  T[[2]] = D[T[[1]], x];
+  T[[3]] = D[T[[2]], x];
+  
+  r = T[[3]] - 3*T[[2]] - 4 x;
+  e[[1]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f1*
+      r \[DifferentialD]x\)\) == 0;
+  e[[2]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f2*
+      r \[DifferentialD]x\)\) == 0;
+  e[[3]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f3*
+      r \[DifferentialD]x\)\) == 0;
+  result = Solve[e];
+  res = T[[1]] /. {p1 -> result[[1, 1, 2]], p2 -> result[[1, 2, 2]], 
+     p3 -> result[[1, 3, 2]]};
+  Return[Simplify[res]];
+  ]
+(* Dane *)
+a = 2;
+b = 3;
+(* Rozwiązanie dokładne *)
+r = DSolveValue[{u''[x] - 3 u'[x] == 4 x, u[2] == 0, u[3] == 0}, 
+   u[x], x];
+plotR = Plot[r, {x, a, b}];
+(* Przykład A *)
+res1 = mow1[a, b];
+plotRes1 = Plot[res1, {x, a, b}, PlotStyle -> {Red, Dashed}];
+Print["Rozwiązanie przybliżone: ", res1];
+Show[plotR, plotRes1]
+(*Norma L2*)
+normL2a = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(
+\*SuperscriptBox[\((res1\  - \ r)\), \(2\)] \[DifferentialD]x\)\);
+Print["Norma L2: ", N[normL2a]];
+(* Przykład B *)
+res2 = mow2[a, b];
+plotRes2 = Plot[res2, {x, a, b}, PlotStyle -> {Red, Dashed}];
+Print["Rozwiązanie przybliżone: ", res2];
+Show[plotR, plotRes2]
+(*Norma L2*)
+normL2b = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(
+\*SuperscriptBox[\((res2\  - \ r)\), \(2\)] \[DifferentialD]x\)\);
+Print["Norma L2: ", N[normL2b]];
+
+
+
+10.
+mow1[a_, b_] := Module[{
+    f1 = 1,
+    f2 = x,
+    f3 = x^2,
+    result, T, r, e, res
+    },
+   
+   T = Table[0, {i, 1, 3}];
+   e = Table[0, {i, 1, 3}];
+   
+   T[[1]] = p1*f1 + p2*f2 + p3*f3;
+   T[[2]] = D[T[[1]], x];
+   T[[3]] = D[T[[2]], x];
+   
+   r0 = T[[3]] - T[[2]];
+   r1  = T[[1]] - 1;
+   r2 = T[[2]] - 2;
+   
+   e[[1]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f1*
+        r0 \[DifferentialD]x\)\) + (f1*r1 /. {x -> a}) + (f1*
+         r2 /. {x -> b}) == 0;
+   e[[2]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f2*
+        r0 \[DifferentialD]x\)\) + (f2*r1 /. {x -> a}) + (f2*
+         r2 /. {x -> b}) == 0;
+   e[[3]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f3*
+        r0 \[DifferentialD]x\)\) + (f3*r1 /. {x -> a}) + (f3*
+         r2 /. {x -> b}) == 0;
+   result = Solve[e];
+   res = T[[1]] /. {p1 -> result[[1, 1, 2]], p2 -> result[[1, 2, 2]], 
+      p3 -> result[[1, 3, 2]]};
+   Return[Simplify[res]];
+   ];
+mow2[a_, b_] := Module[{
+    f1 = 1,
+    f2 = Exp[x],
+    result, T, r, e, res
+    },
+   
+   T = Table[0, {i, 1, 3}];
+   e = Table[0, {i, 1, 2}];
+   
+   T[[1]] = p1*f1 + p2*f2;
+   T[[2]] = D[T[[1]], x];
+   T[[3]] = D[T[[2]], x];
+   
+   r0 = T[[3]] - T[[2]];
+   r1  = T[[1]] - 1;
+   r2 = T[[2]] - 2;
+   
+   e[[1]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f1*
+        r0 \[DifferentialD]x\)\) + (f1*r1 /. {x -> a}) + (f1*
+         r2 /. {x -> b}) == 0;
+   e[[2]] = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(f2*
+        r0 \[DifferentialD]x\)\) + (f2*r1 /. {x -> a}) + (f2*
+         r2 /. {x -> b}) == 0;
+   result = Solve[e];
+   res = T[[1]] /. {p1 -> result[[1, 1, 2]], p2 -> result[[1, 2, 2]]};
+   Return[Simplify[res]];
+   ];
+
+
+* Dane *)
+a = 0;
+b = 1;
+(* Rozwiązanie dokładne *)
+r = DSolveValue[{u''[x] - u'[x] == 0, u'[1] == 2, u[0] == 1}, u[x], x];
+rPlot = Plot[r, {x, a, b}];
+(* Przykład A *)
+ra = mow1[a, b];
+raPlot = Plot[ra, {x, a, b}, PlotStyle -> {Red, Dashed}];
+Print["Rozwiązanie przybliżone: ", ra];
+Show[rPlot, raPlot]
+raNormL2 = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(
+\*SuperscriptBox[\((ra - r)\), \(2\)] \[DifferentialD]x\)\);
+Print["Norma L2: ", N[raNormL2]];
+
+(* Przykład B *)
+rb = mow2[a, b];
+rbPlot = Plot[rb, {x, a, b}, PlotStyle -> {Red, Dashed}];
+Print["Rozwiązanie przybliżone: ", rb];
+Show[rPlot, rbPlot]
+rbNormL2 = \!\(
+\*SubsuperscriptBox[\(\[Integral]\), \(a\), \(b\)]\(
+\*SuperscriptBox[\((rb - r)\), \(2\)] \[DifferentialD]x\)\);
+Print["Norma L2: ", N[rbNormL2]];
